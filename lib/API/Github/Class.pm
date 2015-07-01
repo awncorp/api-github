@@ -1,16 +1,15 @@
 package API::Github::Class;
 
-use Extorter;
+use Import::Into;
 
 # VERSION
 
 sub import {
-    my $class  = shift;
     my $target = caller;
 
-    $class->extort::into($target, '*Data::Object::Class');
-    $class->extort::into($target, '*API::Github::Signature');
-    $class->extort::into($target, '*API::Github::Type');
+    Data::Object::Class->import::into($target);
+    Data::Object::Signatures->import::into($target);
+    Data::Object::Library->import::into($target => -types);
 
     return;
 }

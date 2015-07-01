@@ -12,25 +12,25 @@ use Scalar::Util ();
 
 has identifier => (
     is       => 'rw',
-    isa      => STRING,
+    isa      => Str,
     default  => 'API::Github (Perl)',
 );
 
 has username => (
     is       => 'rw',
-    isa      => STRING,
+    isa      => Str,
     required => 1,
 );
 
 has token => (
     is       => 'rw',
-    isa      => STRING,
+    isa      => Str,
     required => 1,
 );
 
 has version => (
     is       => 'rw',
-    isa      => INTEGER,
+    isa      => Int,
     default  => 3,
 );
 

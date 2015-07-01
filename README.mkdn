@@ -2,7 +2,7 @@
 
 API::Github - Perl 5 API wrapper for Github
 
-[![Build Status](https://travis-ci.org/alnewkirk/API-Github.png?branch=master)](https://travis-ci.org/alnewkirk/API-Github)
+[![Build Status](https://travis-ci.org/AccessAbundant/API-Github.png?branch=master)](https://travis-ci.org/AccessAbundant/API-Github)
 
 # VERSION
 
