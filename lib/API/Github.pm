@@ -1,49 +1,40 @@
-# ABSTRACT: Perl 5 API wrapper for Github
+# ABSTRACT: Github.com API Client
 package API::Github;
 
-use API::Github::Class;
+use namespace::autoclean -except => 'has';
 
-extends 'API::Github::Client';
+use Data::Object::Class;
+use Data::Object::Class::Syntax;
+use Data::Object::Signatures;
 
-use Carp ();
-use Scalar::Util ();
+use Data::Object qw(load);
+use Data::Object::Library qw(Str);
+
+extends 'API::Client';
 
 # VERSION
 
-has identifier => (
-    is       => 'rw',
-    isa      => Str,
-    default  => 'API::Github (Perl)',
-);
+our $DEFAULT_URL = "https://api.github.com";
 
-has username => (
-    is       => 'rw',
-    isa      => Str,
-    required => 1,
-);
+# ATTRIBUTES
 
-has token => (
-    is       => 'rw',
-    isa      => Str,
-    required => 1,
-);
+has username => rw;
+has token    => rw;
 
-has version => (
-    is       => 'rw',
-    isa      => Int,
-    default  => 3,
-);
+# CONSTRAINTS
 
-method AUTOLOAD () {
-    my ($package, $method) = our $AUTOLOAD =~ /^(.+)::(.+)$/;
-    Carp::croak "Undefined subroutine &${package}::$method called"
-        unless Scalar::Util::blessed $self && $self->isa(__PACKAGE__);
+req username => Str;
+req token    => Str;
 
-    # return new resource instance dynamically
-    return $self->resource($method, @_);
-}
+# DEFAULTS
 
-method BUILD () {
+def identifier => 'API::Github (Perl)';
+def url        => method { load('Mojo::URL')->new($DEFAULT_URL) };
+def version    => 1;
+
+# CONSTRUCTION
+
+after BUILD => method {
     my $identifier = $self->identifier;
     my $username   = $self->username;
     my $token      = $self->token;
@@ -54,12 +45,10 @@ method BUILD () {
     my $url        = $self->url;
 
     $agent->transactor->name($identifier);
-
-    # $url->path("/v$version");
     $url->userinfo($userinfo);
 
     return $self;
-}
+};
 
 method PREPARE ($ua, $tx, %args) {
     my $headers = $tx->req->headers;
@@ -67,28 +56,8 @@ method PREPARE ($ua, $tx, %args) {
 
     # default headers
     $headers->header('Content-Type' => 'application/json');
-}
 
-method action ($method, %args) {
-    $method = uc($method || 'get');
-
-    # execute transaction and return response
-    return $self->$method(%args);
-}
-
-method create (%args) {
-    # execute transaction and return response
-    return $self->POST(%args);
-}
-
-method delete (%args) {
-    # execute transaction and return response
-    return $self->DELETE(%args);
-}
-
-method fetch (%args) {
-    # execute transaction and return response
-    return $self->GET(%args);
+    return $self;
 }
 
 method resource (@segments) {
@@ -113,11 +82,6 @@ method resource (@segments) {
 
     # return resource instance
     return $instance;
-}
-
-method update (%args) {
-    # execute transaction and return response
-    return $self->PUT(%args);
 }
 
 1;
@@ -149,163 +113,9 @@ method update (%args) {
 This distribution provides an object-oriented thin-client library for
 interacting with the Github (L<http://github.com>) API. For usage and
 documentation information visit L<https://developer.github.com/v3>.
-
-=cut
-
-=head1 THIN CLIENT
-
-A thin-client library is advantageous as it has complete API coverage and
-can easily adapt to changes in the API with minimal effort. As a thin-client
-library, this module does not map specific HTTP requests to specific routines,
-nor does it provide parameter validation, pagination, or other conventions
-found in typical API client implementations, instead, it simply provides a
-simple and consistent mechanism for dynamically generating HTTP requests.
-Additionally, this module has support for debugging and retrying API calls as
-well as throwing exceptions when 4xx and 5xx server response codes are
-returned.
-
-=cut
-
-=head2 Building
-
-    my $user = $github->users('h@x0r');
-
-    $user->action; # GET /users/h@x0r
-    $user->action('head'); # HEAD /users/h@x0r
-    $user->action('patch'); # PATCH /users/h@x0r
-
-Building up an HTTP request object is extremely easy, simply call method names
-which correspond to the API's path segments in the resource you wish to execute
-a request against. This module uses autoloading and returns a new instance with
-each method call. The following is the equivalent:
-
-=head2 Chaining
-
-    my $user = $github->resource('users', 'h@x0r');
-
-    # or
-
-    my $users = $github->users;
-    my $user  = $users->resource('h@x0r');
-
-    # then
-
-    $user->action('put', %args); # PUT /users/h@x0r
-
-Because each call returns a new API instance configured with a resource locator
-based on the supplied parameters, reuse and request isolation are made simple,
-i.e., you will only need to configure the client once in your application.
-
-=head2 Fetching
-
-    my $users = $github->users;
-
-    # query-string parameters
-
-    $users->fetch( query => { ... } );
-
-    # equivalent to
-
-    my $users = $github->resource('users');
-
-    $users->action( get => ( query => { ... } ) );
-
-This example illustrates how you might fetch an API resource.
-
-=head2 Creating
-
-    my $users = $github->users;
-
-    # content-body parameters
-
-    $users->create( data => { ... } );
-
-    # query-string parameters
-
-    $users->create( query => { ... } );
-
-    # equivalent to
-
-    $github->resource('users')->action(
-        post => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might create a new API resource.
-
-=head2 Updating
-
-    my $users = $github->users;
-    my $user  = $users->resource('h@x0r');
-
-    # content-body parameters
-
-    $user->update( data => { ... } );
-
-    # query-string parameters
-
-    $user->update( query => { ... } );
-
-    # or
-
-    my $user = $github->users('h@x0r');
-
-    $user->update(...);
-
-    # equivalent to
-
-    $github->resource('users')->action(
-        put => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might update a new API resource.
-
-=head2 Deleting
-
-    my $users = $github->users;
-    my $user  = $users->resource('h@x0r');
-
-    # content-body parameters
-
-    $user->delete( data => { ... } );
-
-    # query-string parameters
-
-    $user->delete( query => { ... } );
-
-    # or
-
-    my $user = $github->users('h@x0r');
-
-    $user->delete(...);
-
-    # equivalent to
-
-    $github->resource('users')->action(
-        delete => ( query => { ... }, data => { ... } )
-    );
-
-This example illustrates how you might delete an API resource.
-
-=cut
-
-=head2 Transacting
-
-    my $users = $github->resource('users', 'h@x0r');
-
-    my ($results, $transaction) = $users->action( ... );
-
-    my $request  = $transaction->req;
-    my $response = $transaction->res;
-
-    my $headers;
-
-    $headers = $request->headers;
-    $headers = $response->headers;
-
-    # etc
-
-This example illustrates how you can access the transaction object used
-represent and process the HTTP transaction.
+API::Github is derived from L<API::Client> and inherits all of it's
+functionality. Please read the documentation for API::Client for more usage
+information.
 
 =cut
 
@@ -314,7 +124,8 @@ represent and process the HTTP transaction.
     $github->identifier;
     $github->identifier('IDENTIFIER');
 
-The identifier parameter should be set to a string that identifies your application.
+The identifier attribute should be set to a string that identifies your
+application.
 
 =cut
 
@@ -323,7 +134,7 @@ The identifier parameter should be set to a string that identifies your applicat
     $github->token;
     $github->token('TOKEN');
 
-The token parameter should be set to the API user's personal access token.
+The token attribute should be set to the API user's personal access token.
 
 =cut
 
@@ -332,7 +143,7 @@ The token parameter should be set to the API user's personal access token.
     $github->username;
     $github->username('USERNAME');
 
-The username parameter should be set to the API user's username.
+The username attribute should be set to the API user's username.
 
 =cut
 
