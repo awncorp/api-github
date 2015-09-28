@@ -1,6 +1,10 @@
 Changelog for API-Github
 
-0.03 2015-07-01T16:04:24
+0.04 2015-09-28T03:47:27
+ - Refactored to derive from API::Client.
+
+0.03 2015-07-01T16:04:56
+ - v0.03
  - Refactored dependencies.
  - Initial commit.
 
@@ -11,4 +15,3 @@ Changelog for API-Github
 0.01 2015-05-17T03:25:44
  - v0.01
  - Initial commit.
-
